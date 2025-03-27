@@ -50,38 +50,31 @@ app.post('/produtos', (req, res) => {
     });
   });
 
-
 app.get('/produtos', (req, res) => {
-    const query = 'SELECT * FROM produtos';
-    db.query(query, (err, results) => {
+    const { id } = req.query;
+    const query = `SELECT * FROM produtos ${id ? 'WHERE id = ?' : ''}`;
+
+    const handleResponse = (err, result) => {
         if (err) {
             return res.status(500).json({ error: 'Erro no database' });
         }
-        if (results.length === 0) {
-            return res.status(404).json({ message: 'Nenhum produto encontrado' });
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Produto não encontrado' });
         }
-        res.status(200).json(results);
-    });
+
+        if (id) {
+            return res.status(200).json(result[0]);
+        } else {
+            return res.status(200).json(result);
+        }
+    };
+
+    db.query(query, id ? [id] : [], handleResponse);
 });
 
-app.get('/produtos/:id', (req, res) => {
-    const { id } = req.params;
-    const query = 'SELECT * FROM produtos WHERE id = ?';
-
-    db.query(query, [id], (err, result) => {
-    if (err) {
-        return res.status(500).json({ error: 'Erro no database' });
-    }
-    if (result.length === 0) {
-        return res.status(404).json({ message: 'Produto não encontrado' });
-    }
-
-    res.status(200).json(result[0]);
-    });
-});
-
-app.put('/produtos/:id', (req, res) => {
-    const { id } = req.params;
+app.put('/produtos', (req, res) => {
+    const { id } = req.query;
     const paramKeys = [];
     const paramValues = [];
 
@@ -115,8 +108,8 @@ app.put('/produtos/:id', (req, res) => {
     });
 });
 
-app.delete('/produtos/:id', (req, res) => {
-    const { id } = req.params;
+app.delete('/produtos', (req, res) => {
+    const { id } = req.query;
     const query = 'DELETE FROM produtos WHERE id = ?';
 
     db.query(query, [id], (err, result) => {
@@ -130,6 +123,10 @@ app.delete('/produtos/:id', (req, res) => {
 
         res.status(200).json({ message: 'Produto deletado com sucesso' });
     });
+});
+
+app.use((req, res) => {
+    res.status(501).json({ error: 'Metodo nao implementado' });
 });
 
 const port = 3000;
